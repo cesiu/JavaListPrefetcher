@@ -39,5 +39,10 @@ We must extend our plugin to:
     \item Be able to insert statements to fake prefetching before recursive calls (e.g., ``\texttt{int y = arr[i + 1]}'' --- we found that, even when assigning these values to variables that were never used, the Java compiler did not appear to discard these statements).
 \end{itemize}
 
+Once this is done, we could optionally:
+\begin{itemize}[topsep=0em]
+    \item Compare performance to the equivalent (manually) inlined methods --- we expect that this will produce even better performance. Not only will array elements be accessed an iteration early, but they will then be processed in the same stack frame with fewer instructions.
+\end{itemize}
+
 
 \end{document}
