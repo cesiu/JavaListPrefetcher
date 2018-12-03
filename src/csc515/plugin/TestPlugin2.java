@@ -11,15 +11,18 @@ import com.sun.source.util.TaskListener;
 import com.sun.source.util.TaskEvent;
 import com.sun.source.*;
 
-public class TestPlugin implements Plugin
+public class TestPlugin2 implements Plugin
 {
+    public
+
+
     /*TODO
+    */
     private static Set<String> TARGET_TYPES = Stream.of(   
-            LINKEDLIST)
+            ClassTree)
             .map(Class::getName)
             .collect(Collectors.toSet());
     
-    */
     @Override
     public String getName() {
         // NOTE: This is the name that will be used in the "-Xplugin:<name>"
