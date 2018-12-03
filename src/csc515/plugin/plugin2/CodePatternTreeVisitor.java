@@ -19,7 +19,7 @@ public class CodePatternTreeVisitor extends TreePathScanner<Void, Void> {
     private final Trees trees;
 // utility to operate on types
     private final Types types;
-    private final TypeMirror mapType;
+    private final TypeMirror LinkedListType;
     private final Name getName;
 
     private CompilationUnitTree currCompUnit;
@@ -32,7 +32,7 @@ public class CodePatternTreeVisitor extends TreePathScanner<Void, Void> {
         // utility to operate on program elements
         Elements elements = task.getElements();
         // create the type element to match against
-        mapType = elements.getTypeElement("java.util.LinkedList").asType();
+        LinkedListType = elements.getTypeElement("java.util.LinkedList").asType();
         // create a Name object representing the method name to match against
         getName = elements.getName("poll");
     }
@@ -51,6 +51,10 @@ public class CodePatternTreeVisitor extends TreePathScanner<Void, Void> {
         Kind kind = tree.getKind();
     
         // apply our code pattern logic
+        // //TODO maybe check for recursion here too?????? Maybe have globals keeping the name of the method were in?
+        // TODO Save past method call names? And when a child finds one that was previsously called its recursive? 
+        // Problem is we only have access to the Visit method 
+        // If this is recursive then we can check before and remove it after?
         if (isGetCallOnMap(new TreePath(getCurrentPath(), left)) && kind == Kind.EQUAL_TO && isNullLiteral(right)) {
             System.out.println("Found Match at line: "
             + getLineNumber(tree) + " in "
@@ -58,6 +62,8 @@ public class CodePatternTreeVisitor extends TreePathScanner<Void, Void> {
             //TODO Here is where we need to add a linkedlist.peek() so that we can cache the next element!!!
         }
         return super.visitBinary(tree, p);
+        //TODO remove name of call from list after
+        // ListOfPastCalls.remove()
     }
 
     private boolean isNullLiteral(ExpressionTree node) {
@@ -65,6 +71,20 @@ public class CodePatternTreeVisitor extends TreePathScanner<Void, Void> {
         return (node.getKind() == Kind.NULL_LITERAL);
     }
     
+    private boolean isRecursive(TreePath path) {
+        switch (path.getLeaf().getKind()) {
+            // is it a Method Invocation?
+            case METHOD_INVOCATION:
+            MethodInvocationTree methodInvocation = (MethodInvocationTree) path.getLeaf();
+            // extract the identifier and receiver (methodSelectTree)
+            ExpressionTree methodSelect = methodInvocation.getMethodSelect();
+            //TODO x =  methodInvocation.getName??????
+            // ListOfPastCalls.add(x); 
+            // If(x is in ListOfPastCalls) Return True;
+        }
+        return false;
+    }   
+
     private boolean isGetCallOnMap(TreePath path) {
         switch (path.getLeaf().getKind()) {
             // is it a Method Invocation?
@@ -83,7 +103,7 @@ public class CodePatternTreeVisitor extends TreePathScanner<Void, Void> {
                 Name name = mst.getIdentifier();
                 // 1) check if receiver’s type is subtype of java.util.Map
                 // 2) check if the extracted method name is exactly “get”
-                if (types.isAssignable(types.erasure(type), types.erasure(mapType))
+                if (types.isAssignable(types.erasure(type), types.erasure(LinkedListType))
                 && name == getName) {
                     return true;
                 }
