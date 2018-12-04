@@ -1,23 +1,29 @@
 import csc515.plugin.*;
 
+import java.util.LinkedList;
+
 public class ProofOfConcept {
     public static void main(String[] args) {
-        int[] arr = new int[512000];
-        arr[4096] = 8;
+        LinkedList<Integer> lst = new LinkedList<>();
+
+        for (int i = 0; i < 512000; i++) {
+            lst.add(i);
+        }
 
         long before = System.currentTimeMillis();
-        lambda(arr, 0);
+        sum(lst, 0);
         long after = System.currentTimeMillis();
 
         System.out.println("Delta: " + (after - before));
     }
 
-    public static void lambda(int[] arr, int idx) {
-        arr[idx] = (int)(Math.pow(Math.sqrt(5), idx));
-        // int y = arr[idx + 1];
-
-        if (idx < arr.length - 2) {
-            lambda(arr, idx + 1);
+    public static int sum(LinkedList<Integer> lst, int acc) {
+        if (lst.size() == 0) {
+            return acc;
+        }
+        else {
+            acc += lst.poll();
+            return sum(lst, acc);
         }
     }
 }
