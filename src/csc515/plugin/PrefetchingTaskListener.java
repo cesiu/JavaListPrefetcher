@@ -10,11 +10,11 @@ import com.sun.source.util.TaskListener;
 import com.sun.source.util.TaskEvent;
 import com.sun.source.tree.CompilationUnitTree;
 
-public class CodePatternTaskListener implements TaskListener
+public class PrefetchingTaskListener implements TaskListener
 {
     private final JavacTask task;
 
-    public CodePatternTaskListener(JavacTask task) {
+    public PrefetchingTaskListener(JavacTask task) {
         this.task = task;
     }
 
@@ -26,7 +26,7 @@ public class CodePatternTaskListener implements TaskListener
     @Override
     public void finished(TaskEvent taskEvent) {
         if(taskEvent.getKind().equals(TaskEvent.Kind.ANALYZE)){
-            CodePatternTreeVisitor visitor = new CodePatternTreeVisitor(
+            InvocationSearchVisitor visitor = new InvocationSearchVisitor(
                     task, "java.util.LinkedList", "poll");
             CompilationUnitTree compilationUnit
                     = taskEvent.getCompilationUnit();

@@ -8,15 +8,15 @@ package csc515.plugin;
 import com.sun.source.util.Plugin;
 import com.sun.source.util.JavacTask;
 
-public class CodePatternPlugin implements Plugin
+public class PrefetchingPlugin implements Plugin
 {
     @Override
     public void init(JavacTask task, String[] args) {
-        task.addTaskListener(new CodePatternTaskListener(task));
+        task.addTaskListener(new PrefetchingTaskListener(task));
     }
 
     @Override
     public String getName() {
-        return "CodePatternPlugin";
+        return "PrefetchingPlugin";
     }
 }

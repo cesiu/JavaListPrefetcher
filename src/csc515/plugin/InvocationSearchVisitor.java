@@ -1,5 +1,5 @@
 /**
- * Searchs for method invocation nodes in the Java compiler's AST
+ * Searches for method invocation nodes in the Java compiler's AST
  * @author {hrhudgin, cesiu}@calpoly.edu
  */
 
@@ -10,15 +10,21 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 
-import com.sun.source.tree.*;
+import com.sun.source.tree.Tree;
 import com.sun.source.tree.Tree.Kind;
+import com.sun.source.tree.ExpressionTree;
+import com.sun.source.tree.StatementTree;
+import com.sun.source.tree.BlockTree;
+import com.sun.source.tree.MethodInvocationTree;
+import com.sun.source.tree.CompilationUnitTree;
+import com.sun.source.tree.LineMap;
 import com.sun.source.util.JavacTask;
 import com.sun.source.util.SourcePositions;
 import com.sun.source.util.Trees;
 import com.sun.source.util.TreePath;
 import com.sun.source.util.TreePathScanner;
 
-public class CodePatternTreeVisitor extends TreePathScanner<Void, Void>
+public class InvocationSearchVisitor extends TreePathScanner<Void, Void>
 {
     // Bridges Compiler API, Annotation Processing API and Tree API
     private final Trees trees;
@@ -27,22 +33,32 @@ public class CodePatternTreeVisitor extends TreePathScanner<Void, Void>
     private final SourcePositions sourcePositions;
 
     // The components of the method for which we will search
+    private final String targetObjectName;
+    private final String targetMethodName;
     private final TypeMirror targetObject;
     private final Name targetMethod;
 
     // The current stage in the compilation pipeline
     private CompilationUnitTree compilationUnit;
+    // A visitor for searching basic blocks
+    private BasicBlockSearchVisitor blockVisitor;
 
-    public CodePatternTreeVisitor(
+    public InvocationSearchVisitor(
             JavacTask task, String targetObjectName, String targetMethodName) {
-        types = task.getTypes();
         trees = Trees.instance(task);
+        types = task.getTypes();
         sourcePositions = trees.getSourcePositions();
 
         // Create the object and method elements for which to search.
+        this.targetObjectName = targetObjectName;
+        this.targetMethodName = targetMethodName;
         Elements elements = task.getElements();
         targetObject = elements.getTypeElement(targetObjectName).asType();
         targetMethod = elements.getName(targetMethodName);
+
+        // Create the basic block search visitor.
+        blockVisitor = new BasicBlockSearchVisitor(
+                trees, types, targetObject, targetMethod);
     }
 
     @Override
@@ -54,15 +70,24 @@ public class CodePatternTreeVisitor extends TreePathScanner<Void, Void>
     }
 
     @Override
-    public Void visitMethodInvocation(MethodInvocationTree node, Void p) {
-        if (isCallOnPath(new TreePath(getCurrentPath(), node))) {
-            System.out.println("Found invocation \"" + node + "\" on line " +
-                               getLineNumber(node) + " of " +
-                               compilationUnit.getSourceFile().getName());
-            // TODO: Add peek call.
+    public Void visitBlock(BlockTree block, Void p) {
+        // Run through all the statements in each basic block.
+        for (int idx = 0; idx < block.getStatements().size(); idx++) {
+            StatementTree stmt = block.getStatements().get(idx);
+
+            // Attempt to find the invocation within this immediate block.
+            ExpressionTree targetExpr = blockVisitor.scan(
+                    new TreePath(getCurrentPath(), stmt), null);
+
+            if (targetExpr != null) {
+                System.out.println(
+                 "Found \"" + targetObjectName + "." + targetMethodName +
+                 "\" in \"" + stmt + "\" on line " + getLineNumber(stmt) +
+                 " of \"" + compilationUnit.getSourceFile().getName());
+            }
         }
 
-        return super.visitMethodInvocation(node, p);
+        return super.visitBlock(block, p);
     }
 
     /**
@@ -80,41 +105,6 @@ public class CodePatternTreeVisitor extends TreePathScanner<Void, Void>
             // x =  methodInvocation.getName??????
             // ListOfPastCalls.add(x);
             // If(x is in ListOfPastCalls) Return True;
-        }
-
-        return false;
-    }
-
-    /**
-     * Determines whether or not a call to the desired method is at the end of
-     *  a given AST path.
-     */
-    private boolean isCallOnPath(TreePath path) {
-        if (path.getLeaf().getKind().equals(Kind.METHOD_INVOCATION)) {
-            MethodInvocationTree invocation =
-                    (MethodInvocationTree)path.getLeaf();
-
-            // Get the method identifier.
-            ExpressionTree methodSelect = invocation.getMethodSelect();
-
-            // We limit ourselves to conventional member-based method calls;
-            //  it's a fairly safe assumption in Java for our purposes.
-            if (methodSelect.getKind().equals(Kind.MEMBER_SELECT)) {
-                MemberSelectTree memberSelect = (MemberSelectTree)methodSelect;
-
-                // Get the type of the dot operator's LHS.
-                TypeMirror objectType = trees.getTypeMirror(
-                        new TreePath(path, memberSelect.getExpression()));
-
-                // Get the name of the dot operator's RHS.
-                Name methodName = memberSelect.getIdentifier();
-
-                // 1) Check that the object is an instance of LinkedList.
-                // 2) Check that the method's name is "poll".
-                return types.isAssignable(types.erasure(objectType),
-                                          types.erasure(targetObject))
-                       && methodName == targetMethod;
-            }
         }
 
         return false;
