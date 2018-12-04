@@ -20,13 +20,14 @@ public class CodePatternTaskListener implements TaskListener
 
     @Override
     public void started(TaskEvent taskEvent) {
+        // TODO: No-op?
     }
 
     @Override
     public void finished(TaskEvent taskEvent) {
         if(taskEvent.getKind().equals(TaskEvent.Kind.ANALYZE)){
-            CodePatternTreeVisitor visitor
-                    = new CodePatternTreeVisitor(task);
+            CodePatternTreeVisitor visitor = new CodePatternTreeVisitor(
+                    task, "java.util.LinkedList", "poll");
             CompilationUnitTree compilationUnit
                     = taskEvent.getCompilationUnit();
 
