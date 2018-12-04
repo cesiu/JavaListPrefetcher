@@ -36,6 +36,12 @@ public class BasicBlockSearchVisitor
     }
 
     @Override
+    public MethodInvocationTree reduce(
+            MethodInvocationTree r1, MethodInvocationTree r2) {
+        return r1 == null ? r2 : r1;
+    }
+
+    @Override
     public MethodInvocationTree visitBlock(
             BlockTree block, Void p) {
         // Avoid searching nested blocks.
