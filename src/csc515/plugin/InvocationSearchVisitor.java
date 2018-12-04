@@ -5,19 +5,14 @@
 
 package csc515.plugin;
 
+import java.util.List;
+
 import javax.lang.model.element.Name;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 
-import com.sun.source.tree.Tree;
-import com.sun.source.tree.Tree.Kind;
-import com.sun.source.tree.ExpressionTree;
-import com.sun.source.tree.StatementTree;
-import com.sun.source.tree.BlockTree;
-import com.sun.source.tree.MethodInvocationTree;
-import com.sun.source.tree.CompilationUnitTree;
-import com.sun.source.tree.LineMap;
+import com.sun.source.tree.*;
 import com.sun.source.util.JavacTask;
 import com.sun.source.util.SourcePositions;
 import com.sun.source.util.Trees;
@@ -76,7 +71,7 @@ public class InvocationSearchVisitor extends TreePathScanner<Void, Void>
             StatementTree stmt = block.getStatements().get(idx);
 
             // Attempt to find the invocation within this immediate block.
-            ExpressionTree targetExpr = blockVisitor.scan(
+            MethodInvocationTree targetExpr = blockVisitor.scan(
                     new TreePath(getCurrentPath(), stmt), null);
 
             if (targetExpr != null) {
@@ -84,6 +79,9 @@ public class InvocationSearchVisitor extends TreePathScanner<Void, Void>
                  "Found \"" + targetObjectName + "." + targetMethodName +
                  "\" in \"" + stmt + "\" on line " + getLineNumber(stmt) +
                  " of \"" + compilationUnit.getSourceFile().getName());
+
+                // TODO: Add a peek as statement "idx + 1" of this block. The
+                //       list on which to peek is the object of "targetExpr".
             }
         }
 
@@ -94,7 +92,7 @@ public class InvocationSearchVisitor extends TreePathScanner<Void, Void>
      * TODO
      */
     private boolean isRecursive(TreePath path) {
-        if (path.getLeaf().getKind().equals(Kind.METHOD_INVOCATION)) {
+        if (path.getLeaf().getKind().equals(Tree.Kind.METHOD_INVOCATION)) {
             MethodInvocationTree invocation =
                     (MethodInvocationTree)path.getLeaf();
 
