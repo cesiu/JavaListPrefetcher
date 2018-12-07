@@ -8,7 +8,10 @@ public class cyclist_list_traversal<T>{
 
     public long iterative(){
         long before = System.currentTimeMillis();
-        while(ll.poll() != null){}
+        T x = ll.poll();
+        while(x != null){
+            x = ll.poll();
+        }
         long after = System.currentTimeMillis();
 
         return after - before;
@@ -21,7 +24,8 @@ public class cyclist_list_traversal<T>{
         return after - before;
     }
     private void getNext(){
-        if(ll.poll() == null){
+        T x = ll.poll();
+        if(x == null){
             return;
         }
         getNext();
