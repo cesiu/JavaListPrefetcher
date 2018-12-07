@@ -9,7 +9,7 @@ public class setup{
         }else if(arg.equals("2")){
             x = 524288;
         }else if(arg.equals("3")){
-            x = 1048576;
+            x = 1048576*4;
         }else{
             throw new RuntimeException();
         }
