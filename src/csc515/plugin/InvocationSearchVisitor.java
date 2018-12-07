@@ -19,9 +19,16 @@ import com.sun.source.util.Trees;
 import com.sun.source.util.TreePath;
 import com.sun.source.util.TreePathScanner;
 
+import com.sun.tools.javac.tree.*;
+import com.sun.tools.javac.tree.JCTree.*;
+import com.sun.tools.javac.api.BasicJavacTask;
+import com.sun.tools.javac.util.Context;
+import com.sun.tools.javac.util.ListBuffer;
+
 public class InvocationSearchVisitor extends TreePathScanner<Void, Void>
 {
     // Bridges Compiler API, Annotation Processing API and Tree API
+    private final Context context;
     private final Trees trees;
     private final Types types;
     // Offsets of AST nodes in source file
@@ -43,6 +50,7 @@ public class InvocationSearchVisitor extends TreePathScanner<Void, Void>
         trees = Trees.instance(task);
         types = task.getTypes();
         sourcePositions = trees.getSourcePositions();
+        this.context = ((BasicJavacTask)task).getContext();
 
         // Create the object and method elements for which to search.
         this.targetObjectName = targetObjectName;
@@ -82,6 +90,25 @@ public class InvocationSearchVisitor extends TreePathScanner<Void, Void>
 
                 // TODO: Add a peek as statement "idx + 1" of this block. The
                 //       list on which to peek is the object of "targetExpr".
+                System.out.println(block);
+                TreeMaker treeMaker = TreeMaker.instance(context);
+
+                // Get a mutable copy of the statement list.
+                JCBlock rawBlock = (JCBlock)block;
+                ListBuffer rawStmts = new ListBuffer();
+
+                // TODO: This just duplicates the poll.
+                for (int jdx = 0; jdx < idx + 1; jdx++) {
+                    rawStmts.append(block.getStatements().get(jdx));
+                }
+                for (int jdx = idx; jdx < block.getStatements().size(); jdx++) {
+                    rawStmts.append(block.getStatements().get(jdx));
+                }
+
+                // Put the new list back into the block node.
+                rawBlock.stats = rawStmts.toList();
+                System.out.println(block);
+                break;
             }
         }
 
