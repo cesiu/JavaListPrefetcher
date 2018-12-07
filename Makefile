@@ -3,6 +3,7 @@
 all:
 	cd src && \
 	javac --add-exports jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED \
+	      --add-exports jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED \
 	      --add-exports jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED \
 	      --add-exports jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED \
 	      csc515/plugin/*.java && \

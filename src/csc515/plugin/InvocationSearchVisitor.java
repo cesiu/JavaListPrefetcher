@@ -23,22 +23,24 @@ import com.sun.tools.javac.tree.*;
 import com.sun.tools.javac.tree.JCTree.*;
 import com.sun.tools.javac.api.BasicJavacTask;
 import com.sun.tools.javac.util.Context;
+import com.sun.tools.javac.util.Names;
 import com.sun.tools.javac.util.ListBuffer;
 
 public class InvocationSearchVisitor extends TreePathScanner<Void, Void>
 {
     // Bridges Compiler API, Annotation Processing API and Tree API
-    private final Context context;
-    private final Trees trees;
-    private final Types types;
+    private Trees trees;
+    private Types types;
+    private TreeMaker treeMaker;
+    private Names symbolTable;
     // Offsets of AST nodes in source file
-    private final SourcePositions sourcePositions;
+    private SourcePositions sourcePositions;
 
     // The components of the method for which we will search
-    private final String targetObjectName;
-    private final String targetMethodName;
-    private final TypeMirror targetObject;
-    private final Name targetMethod;
+    private String targetObjectName;
+    private String oldMethodName;
+    private String newMethodName;
+    private TypeMirror targetObject;
 
     // The current stage in the compilation pipeline
     private CompilationUnitTree compilationUnit;
@@ -46,22 +48,27 @@ public class InvocationSearchVisitor extends TreePathScanner<Void, Void>
     private BasicBlockSearchVisitor blockVisitor;
 
     public InvocationSearchVisitor(
-            JavacTask task, String targetObjectName, String targetMethodName) {
+            JavacTask task, String targetObjectName,
+            String oldMethodName, String newMethodName) {
+        Context context = ((BasicJavacTask)task).getContext();
+        Elements elements = task.getElements();
+
+        // Save the context of compilation.
         trees = Trees.instance(task);
         types = task.getTypes();
+        treeMaker = TreeMaker.instance(context);
+        symbolTable = Names.instance(context);
         sourcePositions = trees.getSourcePositions();
-        this.context = ((BasicJavacTask)task).getContext();
 
         // Create the object and method elements for which to search.
         this.targetObjectName = targetObjectName;
-        this.targetMethodName = targetMethodName;
-        Elements elements = task.getElements();
+        this.oldMethodName = oldMethodName;
+        this.newMethodName = newMethodName;
         targetObject = elements.getTypeElement(targetObjectName).asType();
-        targetMethod = elements.getName(targetMethodName);
 
         // Create the basic block search visitor.
         blockVisitor = new BasicBlockSearchVisitor(
-                trees, types, targetObject, targetMethod);
+                trees, types, targetObject, elements.getName(oldMethodName));
     }
 
     @Override
@@ -75,64 +82,52 @@ public class InvocationSearchVisitor extends TreePathScanner<Void, Void>
     @Override
     public Void visitBlock(BlockTree block, Void p) {
         // Run through all the statements in each basic block.
-        for (int idx = 0; idx < block.getStatements().size(); idx++) {
-            StatementTree stmt = block.getStatements().get(idx);
+        for (int i = 0; i < block.getStatements().size(); i++) {
+            StatementTree stmt = block.getStatements().get(i);
 
             // Attempt to find the invocation within this immediate block.
             MethodInvocationTree targetExpr = blockVisitor.scan(
                     new TreePath(getCurrentPath(), stmt), null);
 
             if (targetExpr != null) {
-                System.out.println(
-                 "Found \"" + targetObjectName + "." + targetMethodName +
-                 "\" in \"" + stmt + "\" on line " + getLineNumber(stmt) +
-                 " of \"" + compilationUnit.getSourceFile().getName());
-
-                // TODO: Add a peek as statement "idx + 1" of this block. The
-                //       list on which to peek is the object of "targetExpr".
-                System.out.println(block);
-                TreeMaker treeMaker = TreeMaker.instance(context);
+                // Extract the invoked expression.
+                MemberSelectTree memberSelect =
+                        (MemberSelectTree)targetExpr.getMethodSelect();
 
                 // Get a mutable copy of the statement list.
                 JCBlock rawBlock = (JCBlock)block;
                 ListBuffer rawStmts = new ListBuffer();
-
-                // TODO: This just duplicates the poll.
-                for (int jdx = 0; jdx < idx + 1; jdx++) {
-                    rawStmts.append(block.getStatements().get(jdx));
+                for (int j = 0; j < i + 1; j++) {
+                    rawStmts.append(block.getStatements().get(j));
                 }
-                for (int jdx = idx; jdx < block.getStatements().size(); jdx++) {
-                    rawStmts.append(block.getStatements().get(jdx));
+
+                // Create a member access of the new desired method...
+                JCFieldAccess accessExpr = treeMaker.Select(
+                        (JCExpression)memberSelect.getExpression(),
+                        symbolTable.fromString(newMethodName));
+                accessExpr.type = ((JCFieldAccess)memberSelect).type;
+                // ...change the internal symbol appropriately...
+                accessExpr.sym = ((JCFieldAccess)memberSelect).sym.clone(
+                        ((JCFieldAccess)memberSelect).sym.owner);
+                accessExpr.sym.name = symbolTable.fromString(newMethodName);
+                // ...call it...
+                JCMethodInvocation callExpr = treeMaker.App(accessExpr);
+                // ...and make that a standalone statement.
+                JCExpressionStatement callStmt = treeMaker.Exec(callExpr);
+                rawStmts.append(callStmt);
+
+                // Add in the rest of the original statements.
+                for (int j = i + 1; j < block.getStatements().size(); j++) {
+                    rawStmts.append(block.getStatements().get(j));
                 }
 
                 // Put the new list back into the block node.
                 rawBlock.stats = rawStmts.toList();
-                System.out.println(block);
                 break;
             }
         }
 
         return super.visitBlock(block, p);
-    }
-
-    /**
-     * TODO
-     */
-    private boolean isRecursive(TreePath path) {
-        if (path.getLeaf().getKind().equals(Tree.Kind.METHOD_INVOCATION)) {
-            MethodInvocationTree invocation =
-                    (MethodInvocationTree)path.getLeaf();
-
-            // Extract the identifier and receiver.
-            ExpressionTree methodSelect = invocation.getMethodSelect();
-
-            // TODO:
-            // x =  methodInvocation.getName??????
-            // ListOfPastCalls.add(x);
-            // If(x is in ListOfPastCalls) Return True;
-        }
-
-        return false;
     }
 
     /**

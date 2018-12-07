@@ -27,7 +27,7 @@ public class PrefetchingTaskListener implements TaskListener
     public void finished(TaskEvent taskEvent) {
         if(taskEvent.getKind().equals(TaskEvent.Kind.ANALYZE)){
             InvocationSearchVisitor visitor = new InvocationSearchVisitor(
-                    task, "java.util.LinkedList", "poll");
+                    task, "java.util.LinkedList", "poll", "peek");
             CompilationUnitTree compilationUnit
                     = taskEvent.getCompilationUnit();
 
