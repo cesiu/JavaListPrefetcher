@@ -6,6 +6,12 @@ public class cyclist_jayhorn_array_tests{
         for(int i = 0; i < 1048576; i++){
             array[i] = i;
         }
+        testCLTi();
+        testCLTr();
+        testCDTi();
+        testCDTr();
+        testReverse();
+        testEvenOdd();
     }
     public void testCLTi(){
         long acc = 0;

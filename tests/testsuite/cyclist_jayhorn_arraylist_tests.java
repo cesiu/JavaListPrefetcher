@@ -3,7 +3,7 @@ import java.util.ArrayList;
 public class cyclist_jayhorn_arraylist_tests<T>{
     ArrayList<T> array;
     T x;
-    public void cyclist_jayhorn_arraylist_test(ArrayList<T> arr){
+    public cyclist_jayhorn_arraylist_tests(ArrayList<T> arr){
         array = arr;
     }
     public void testCLTi(){
