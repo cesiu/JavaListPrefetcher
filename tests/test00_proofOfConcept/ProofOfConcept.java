@@ -1,5 +1,3 @@
-import csc515.plugin.*;
-
 import java.util.LinkedList;
 
 public class ProofOfConcept {

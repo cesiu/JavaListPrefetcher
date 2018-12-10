@@ -6,6 +6,7 @@
 package csc515.plugin;
 
 import java.util.List;
+import java.util.function.Function;
 
 import javax.lang.model.element.Name;
 import javax.lang.model.type.TypeMirror;
@@ -21,9 +22,6 @@ import com.sun.source.util.TreePathScanner;
 
 import com.sun.tools.javac.tree.*;
 import com.sun.tools.javac.tree.JCTree.*;
-import com.sun.tools.javac.api.BasicJavacTask;
-import com.sun.tools.javac.util.Context;
-import com.sun.tools.javac.util.Names;
 import com.sun.tools.javac.util.ListBuffer;
 
 public class InvocationSearchVisitor extends TreePathScanner<Void, Void>
@@ -31,44 +29,43 @@ public class InvocationSearchVisitor extends TreePathScanner<Void, Void>
     // Bridges Compiler API, Annotation Processing API and Tree API
     private Trees trees;
     private Types types;
-    private TreeMaker treeMaker;
-    private Names symbolTable;
     // Offsets of AST nodes in source file
     private SourcePositions sourcePositions;
 
     // The components of the method for which we will search
     private String targetObjectName;
-    private String oldMethodName;
-    private String newMethodName;
+    private String targetMethodName;
     private TypeMirror targetObject;
 
     // The current stage in the compilation pipeline
     private CompilationUnitTree compilationUnit;
     // A visitor for searching basic blocks
     private BasicBlockSearchVisitor blockVisitor;
+    // A callback for processing discovered invocations
+    private Function<MethodInvocationTree, JCStatement> callback;
 
     public InvocationSearchVisitor(
             JavacTask task, String targetObjectName,
-            String oldMethodName, String newMethodName) {
-        Context context = ((BasicJavacTask)task).getContext();
+            String targetMethodName, String newMethodName,
+            Function<MethodInvocationTree, JCStatement> callback) {
         Elements elements = task.getElements();
 
         // Save the context of compilation.
         trees = Trees.instance(task);
         types = task.getTypes();
-        treeMaker = TreeMaker.instance(context);
-        symbolTable = Names.instance(context);
         sourcePositions = trees.getSourcePositions();
 
         // Create the object and method elements for which to search.
         this.targetObjectName = targetObjectName;
-        this.oldMethodName = oldMethodName;
-        this.newMethodName = newMethodName;
+        this.targetMethodName = targetMethodName;
         targetObject = elements.getTypeElement(targetObjectName).asType();
 
         // Create the basic block search visitor.
         blockVisitor = new BasicBlockSearchVisitor(
-                trees, types, targetObject, elements.getName(oldMethodName));
+                trees, types, targetObject,
+                elements.getName(targetMethodName));
+
+        this.callback = callback;
     }
 
     @Override
@@ -90,31 +87,15 @@ public class InvocationSearchVisitor extends TreePathScanner<Void, Void>
                     new TreePath(getCurrentPath(), stmt), null);
 
             if (targetExpr != null) {
-                // Extract the invoked expression.
-                MemberSelectTree memberSelect =
-                        (MemberSelectTree)targetExpr.getMethodSelect();
-
-                // Get a mutable copy of the statement list.
+                // Start with a mutable copy of the statement list.
                 JCBlock rawBlock = (JCBlock)block;
                 ListBuffer rawStmts = new ListBuffer();
                 for (int j = 0; j < i + 1; j++) {
                     rawStmts.append(block.getStatements().get(j));
                 }
 
-                // Create a member access of the new desired method...
-                JCFieldAccess accessExpr = treeMaker.Select(
-                        (JCExpression)memberSelect.getExpression(),
-                        symbolTable.fromString(newMethodName));
-                accessExpr.type = ((JCFieldAccess)memberSelect).type;
-                // ...change the internal symbol appropriately...
-                accessExpr.sym = ((JCFieldAccess)memberSelect).sym.clone(
-                        ((JCFieldAccess)memberSelect).sym.owner);
-                accessExpr.sym.name = symbolTable.fromString(newMethodName);
-                // ...call it...
-                JCMethodInvocation callExpr = treeMaker.App(accessExpr);
-                // ...and make that a standalone statement.
-                JCExpressionStatement callStmt = treeMaker.Exec(callExpr);
-                rawStmts.append(callStmt);
+                // Add in the result of the callback.
+                rawStmts.append(callback.apply(targetExpr));
 
                 // Add in the rest of the original statements.
                 for (int j = i + 1; j < block.getStatements().size(); j++) {
