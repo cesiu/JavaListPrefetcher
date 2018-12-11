@@ -45,8 +45,7 @@ public class InvocationSearchVisitor extends TreePathScanner<Void, Void>
     private Function<MethodInvocationTree, JCStatement> callback;
 
     public InvocationSearchVisitor(
-            JavacTask task, String targetObjectName,
-            String targetMethodName, String newMethodName,
+            JavacTask task, String targetObjectName, String targetMethodName,
             Function<MethodInvocationTree, JCStatement> callback) {
         Elements elements = task.getElements();
 
