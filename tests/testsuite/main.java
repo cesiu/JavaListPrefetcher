@@ -3,7 +3,7 @@ import java.util.ArrayList;
 
 public class main{
     public static void main(String[] args){
-        //System.out.println("0: "+args[0]+" 1: "+args[1]+" 2: "+args[2]+" 3: "+args[3]);
+        System.out.println("0: "+args[0]);//+" 1: "+args[1]+" 2: "+args[2]+" 3: "+args[3]);
         if(args[0].equals("ll")){
         int j = 0;
             for(j = 1; j < 4; j++){
@@ -82,12 +82,35 @@ public class main{
             new cyclist_jayhorn_array_tests();
         }else if(args[0].equals("al")){
             ArrayList<Integer> arr = new ArrayList<Integer>();
-            for(int i = 0; i < 1048576;i++){
+            for(int i = 0; i < 1048577;i++){
                 arr.add(i);
             }
             new cyclist_jayhorn_arraylist_tests(arr);
-        }
+        }else if(args[0].equals("ll2")){
+        int j = 0;
+            for(j = 1; j < 4; j++){
+                long acc = 0;
+                for(int i = 0; i < 100;i++){
+                    LinkedList<Integer> linkedlist = setup.setupLinkedListInteger(j);
+                        cyclist_list_traversal clt = new cyclist_list_traversal(linkedlist);
+            long before = System.currentTimeMillis();
+                            clt.evenodd(j);
+            long after = System.currentTimeMillis();
+                            acc += (after - before);
+                }
+                if(j == 1){
+                    System.out.println("CLT Ints 256 iterative 100x Average: "+(acc/100.0));
+                }
+                if(j == 2){
+                    System.out.println("CLT Ints 500k iterative 100x Average: "+(acc/100.0));
+                }
+                if(j == 3){
+                    System.out.println("CLT Ints 1M iterative 100x Average: "+(acc/100.0));
+                }
+            }
+ 
 
+        }
 
     }
 }
