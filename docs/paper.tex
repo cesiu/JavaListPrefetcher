@@ -173,7 +173,7 @@ The examples shown apply to recursive traversals of linked lists, however, the s
 
 In the case of more traditional array-based lists, we identify calls to the method \texttt{ArrayList.get}. Similar to how it handles linked lists, in the example given in Figure \ref{fig:alBefore}, our plugin determines that \lstinline{lst.get(idx)} is a call to a method named ``get'' on an object of type \texttt{ArrayList}.
 
-Our task is every so slightly more complex in this case. We must extract not on the expression representing the object (again, the identifier \texttt{lst}) but also the argument expression representing the index (the identifier \texttt{idx}).
+Our task is ever so slightly more complex in this case. We must extract not only the expression representing the object (again, the identifier \texttt{lst}) but also the argument expression representing the index (the identifier \texttt{idx}).
 
 \begin{figure}[h]
 {\begin{tabular}{@{\hspace{1.5em}}l}
