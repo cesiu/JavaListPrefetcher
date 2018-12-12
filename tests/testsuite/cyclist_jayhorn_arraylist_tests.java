@@ -5,6 +5,12 @@ public class cyclist_jayhorn_arraylist_tests<T>{
     T x;
     public cyclist_jayhorn_arraylist_tests(ArrayList<T> arr){
         array = arr;
+        testCLTi();
+        testCLTr();
+        testCDTi();
+        testCDTr();
+        testReverse();
+        testEvenOdd();
     }
     public void testCLTi(){
         long acc = 0;

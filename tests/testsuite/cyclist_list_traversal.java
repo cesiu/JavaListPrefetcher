@@ -30,4 +30,31 @@ public class cyclist_list_traversal<T>{
         }
         getNext();
     }
+    public void evenodd(int num){
+        if(num == 1){
+            even(512);
+        }
+        else if(num == 2){
+            even(524288);
+        }
+        else if(num == 3){
+            even(1048576);
+        }
+
+    }
+    public void odd(int pos){
+        if(pos == 0){
+            return;
+        }
+        T x = ll.poll();
+        even(pos-1);
+    }
+    public void even(int pos){
+        if(pos == 0){
+            return;
+        }
+        T x = ll.poll();
+        odd(pos-1);
+
+    }
 }
